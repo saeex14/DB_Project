@@ -119,13 +119,25 @@
 -- AS 
 -- RETURN (SELECT * FROM Accounts WHERE @P_Username = username);
 
-CREATE FUNCTION Accounts_Info_byNumber(
+-- CREATE FUNCTION Accounts_Info_byNumber(
+-- @P_Account_Nummber VARCHAR(16)
+-- )
+-- RETURNS TABLE
+-- AS 
+-- RETURN (SELECT * FROM Accounts WHERE @P_Account_Nummber = account_number);
+
+CREATE FUNCTION Account_Owner(
 @P_Account_Nummber VARCHAR(16)
 )
-RETURNS TABLE
+RETURNS VARCHAR(100)
 AS 
-RETURN (SELECT * FROM Accounts WHERE @P_Account_Nummber = account_number);
-
+BEGIN
+    DECLARE @fullName VARCHAR(100)
+    SELECT @fullName = (name +' '+ lastname) 
+    FROM Users, Accounts
+    WHERE @P_Account_Nummber = account_number AND Accounts.username = Users.username
+    RETURN (@fullName)
+END;
 
 
 
@@ -137,8 +149,9 @@ RETURN (SELECT * FROM Accounts WHERE @P_Account_Nummber = account_number);
 -- -- EXECUTE Change_Password @P_Username = 'Amiir', @P_Current_Password = '456', @P_New_Password = '789'
 
 -- SELECT * FROM Accounts_Info_byNumber('5859831103511177')
-
-    
+-- SELECT * FROM Accounts
+-- SELECT * FROM Users
+-- PRINT dbo.Account_Owner ('5810121345678092')
 
 
 
