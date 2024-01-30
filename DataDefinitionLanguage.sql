@@ -9,10 +9,12 @@ salt UNIQUEIDENTIFIER,
 PRIMARY KEY(username)
 );
 
-create table Account_Info(
+create table Accounts(
 account_number VARCHAR(16),
 username VARCHAR(25),
 amount DECIMAL(15,2),
 block BIT,
-loan_status BIT
+loan_status BIT,
+PRIMARY KEY(account_number),
+FOREIGN KEY (username) REFERENCES Users
 );
