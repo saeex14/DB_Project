@@ -97,12 +97,27 @@ BEGIN
     END;
 END;
 
+CREATE PROCEDURE New_Account(
+@P_Account_Number VARCHAR(16),
+@P_Username VARCHAR(25),
+@P_Amount DECIMAL(15,2),
+@P_Block BIT,
+@P_Loan_Status BIT
+)
+AS
+BEGIN
+    INSERT INTO Account_Info
+    VALUES(@P_Account_Number, @P_Username, @P_Amount, @P_Block, @P_Loan_Status);
+END;
 
 
+
+-- EXECUTE New_Account @P_Account_Number = '5859831103511167',@P_Username = 'Amir', 
+-- @P_Amount = '4000000', @P_Block = 0 , @P_Loan_Status = 0
 
 -- EXECUTE Change_Password @P_Username = 'Amiir', @P_Current_Password = '456', @P_New_Password = '789'
 
--- SELECT * FROM Users
+-- SELECT * FROM Account_Info
     
 
 
