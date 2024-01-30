@@ -27,10 +27,10 @@ BEGIN
         END;
 END;
 -------------------
-
+GO
 CREATE PROCEDURE Log_In(
-@P_Username VARCHAR(20),
-@P_Current_Password VARCHAR(256)
+    @P_Username VARCHAR(20),
+    @P_Current_Password VARCHAR(256)
 )
 AS
 BEGIN
@@ -53,14 +53,14 @@ BEGIN
         END;
         ELSE
         BEGIN
-            PRINT 'Discorrect';
+            PRINT 'Incorrect';
         END;
     END;
 END;
 
 ---------------------
 
-
+GO
 CREATE PROCEDURE Change_Password(
 @P_Username VARCHAR(20),
 @P_Current_Password VARCHAR(256),
@@ -70,7 +70,7 @@ AS
 BEGIN
     IF NOT EXISTS (SELECT * FROM Users WHERE @P_Username = username)
     BEGIN
-        PRINT 'The username doesn''t exist!'
+        PRINT "The username doesn't exist!"
     END;
 
     ELSE
@@ -97,6 +97,7 @@ BEGIN
     END;
 END;
 
+GO
 CREATE PROCEDURE New_Account(
 @P_Account_Number VARCHAR(16),
 @P_Username VARCHAR(25),
@@ -110,8 +111,7 @@ BEGIN
     VALUES(@P_Account_Number, @P_Username, @P_Amount, @P_Block, @P_Loan_Status);
 END;
 
-
-
+GO
 CREATE FUNCTION Acounts_Info_byID(
 @P_Username VARCHAR(25)
 )
@@ -119,6 +119,7 @@ RETURNS TABLE
 AS 
 RETURN (SELECT * FROM Accounts WHERE @P_Username = username);
 
+GO
 CREATE FUNCTION Accounts_Info_byNumber(
 @P_Account_Nummber VARCHAR(16)
 )
@@ -126,6 +127,7 @@ RETURNS TABLE
 AS 
 RETURN (SELECT * FROM Accounts WHERE @P_Account_Nummber = account_number);
 
+GO  
 CREATE FUNCTION Account_Owner(
 @P_Account_Nummber VARCHAR(16)
 )
@@ -138,25 +140,7 @@ BEGIN
     WHERE @P_Account_Nummber = account_number AND Accounts.username = Users.username
     RETURN (@fullName)
 END;
-
-
-
-CREATE FUNCTION Account_Owner(
-@P_Account_Nummber VARCHAR(16)
-)
-RETURNS VARCHAR(100)
-AS 
-BEGIN
-    DECLARE @fullName VARCHAR(100)
-    SELECT @fullName = (name +' '+ lastname) 
-    FROM Users, Accounts
-    WHERE @P_Account_Nummber = account_number AND Accounts.username = Users.username
-    RETURN (@fullName)
-END;
-
-
-
-
+GO
 
 
 
@@ -172,9 +156,95 @@ END;
 
 
 
+------- FUNCTION And PROCEDURE for Loan -------------
+
+CREATE FUNCTION Loan_List_byUsername(
+@P_username VARCHAR(25)
+)
+RETURNS TABLE
+AS
+RETURN (select * from Loans where @P_username = Loan.username);
+
+GO
+CREATE PROCEDURE Get_New_Loan(
+    @P_Username VARCHAR(25),
+    @P_Account_Number VARCHAR(16),
+    @P_Amount DECIMAL(15, 2)
+)
+AS
+BEGIN
+    IF NOT EXISTS(select * from Accounts where @@P_Account_Number = Accounts.account_number)
+        BEGIN
+            PRINT "The username doesn't exist!"
+        END
+    ELSE
+        BEGIN
+            IF EXISTS (select * 
+                from Accounts 
+                where @P_Account_Number = Accounts.account_number and loan_status = 1)
+                BEGIN
+                    PRINT "You must finish your payment. After you can get new loan"
+                END;
+            ELSE
+                BEGIN
+                    -- Add new loan
+                    UPDATE Accounts
+                    set loan_status = 1, amount = @P_Amount + amount
+                    where @P_Account_Number = Accounts.account_number;
+                    INSERT INTO Loans(username, account_number, amount, remain_payment, date)
+                    VALUES (@P_Username, @P_Account_Number, @P_Amount, 12, GETDATE());
+                    DECLARE @payment_times INTEGER
+                    set @payment_times = 1
+                    while @payment_times < 13
+                        BEGIN
+                            INSERT INTO Payments
+                            VALUES (@P_Account_Number, @P_Amount, GETDATE() + 30 * @Payment_times, 0);
+                            set @payment_times = @payment_times + 1
+                        END
+                END
+        END
+END;
 
 
+Go 
+CREATE PROCEDURE Pay_Loan(
+    @P_Account_Number VARCHAR(16)
+)
+AS
+BEGIN
+    IF EXISTS (select * 
+                from Accounts 
+                where @P_Account_Number = Accounts.account_number and Accounts.loan_status = 1)
+        BEGIN
+            DECLARE @P_Payment_Amount DECIMAL(15, 2)
+            DECLARE @P_Account_Amount DECIMAL(15, 2)
+            select @P_Payment_Amount = amount / 12 from Loans where @P_Account_Number = Loans.amoun;
+            select @P_Account_Amount = amount from Accounts where @P_Account_Number = amount;
+            IF @P_Payment_Amount <= @P_Account_Amount
+                BEGIN
+                    UPDATE Loans
+                    set remain_payment = remain_payment - 1
+                    where Loans.account_number = @P_Account_Number;
+                    UPDATE Payments
+                    set is_payed = 1
+                    where Payments.account_number = @P_Account_Number and date <= GETDATE();
+                END
+            ELSE
+                BEGIN
+                    PRINT "Don't have enough money!"
+                END
+        END
+        ELSE
+            BEGIN
+                PRINT "You don't have loan"
+            END
+END;
 
 
-
-
+GO
+CREATE FUNCTION Info_Payment_byNumber(
+    @P_Account_Number VARCHAR(16)
+)
+RETURNS TABLE
+AS
+RETURN (select * from Payments where @P_Account_Number = Payment.account_number);
